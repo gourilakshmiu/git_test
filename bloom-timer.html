@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bloom — Study Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;500;600;700;800&family=Caveat:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --pink:#F2A7C3;--pink-l:#FAD9E8;--pink-d:#C4527A;
+  --lav:#C3B9F0;--lav-l:#EAE6FF;--lav-d:#7B6DC9;
+  --mint:#A8DEC9;--mint-l:#D8F3EA;--mint-d:#3B9B75;
+  --peach:#F8C8A0;--peach-l:#FDE8D4;
+  --yellow:#FAE07A;--yellow-l:#FEF8D0;
+  --cream:#FFF8F4;--white:#FFFFFF;
+  --text:#5A3B4A;--text-s:#9A6B7E;--text-xs:#C4A0B0;
+  --border:rgba(242,167,195,0.25);
+  --card:rgba(255,255,255,0.85);
+  --shadow:0 4px 24px rgba(196,82,122,0.10);
+  --r:20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:90px;overflow-x:hidden;}
+
+/* blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:0.32;pointer-events:none;z-index:0;animation:drift 10s ease-in-out infinite alternate;}
+.b1{width:360px;height:360px;background:var(--lav-l);top:-80px;left:-80px;}
+.b2{width:260px;height:260px;background:var(--pink-l);bottom:80px;right:-50px;animation-delay:-4s;}
+.b3{width:180px;height:180px;background:var(--mint-l);top:50%;left:55%;animation-delay:-2s;}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(20px,14px)}}
+
+.page{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px;}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 0 12px;animation:slideDown 0.5s ease both;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.back-btn{width:38px;height:38px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all 0.2s;}
+.back-btn:hover{background:var(--pink-l);border-color:var(--pink);}
+.topbar-center{text-align:center;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:600;color:var(--lav-d);}
+.topbar-sub{font-size:0.7rem;color:var(--text-xs);}
+.stars-chip{background:var(--yellow-l);border:1.5px solid var(--yellow);color:#7d6000;font-size:0.78rem;font-weight:800;padding:6px 12px;border-radius:20px;}
+
+/* mode selector */
+.mode-row{display:flex;gap:8px;margin-bottom:16px;animation:fadeUp 0.4s 0.05s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.mode-btn{flex:1;padding:9px 6px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);font-size:0.75rem;font-weight:700;color:var(--text-s);cursor:pointer;text-align:center;transition:all 0.2s;}
+.mode-btn.active{background:linear-gradient(135deg,var(--lav-l),var(--pink-l));border-color:var(--lav);color:var(--lav-d);}
+.mode-btn:hover:not(.active){border-color:var(--lav);color:var(--lav-d);}
+
+/* subject picker */
+.subject-row{display:flex;gap:8px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px;scrollbar-width:none;animation:fadeUp 0.4s 0.08s ease both;}
+.subject-row::-webkit-scrollbar{display:none;}
+.subject-pill{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);font-size:0.75rem;font-weight:700;color:var(--text-s);cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.subject-pill.active{background:linear-gradient(135deg,var(--pink),var(--lav));border-color:transparent;color:white;box-shadow:0 3px 12px rgba(196,82,122,0.25);}
+.subject-pill:hover:not(.active){border-color:var(--pink);color:var(--pink-d);}
+
+/* ── TIMER CARD ── */
+.timer-card{background:var(--card);border:1.5px solid var(--border);border-radius:28px;padding:1.6rem 1.2rem 1.4rem;box-shadow:var(--shadow);text-align:center;margin-bottom:14px;position:relative;overflow:hidden;animation:fadeUp 0.4s 0.1s ease both;}
+.timer-card::before{content:'';position:absolute;inset:0;background:linear-gradient(160deg,rgba(234,230,255,0.3),rgba(250,217,232,0.2));pointer-events:none;}
+
+/* mascot */
+.mascot-area{position:relative;display:flex;justify-content:center;margin-bottom:1rem;}
+.mascot-svg{filter:drop-shadow(0 4px 14px rgba(123,109,201,0.2));}
+.mascot-bubble{position:absolute;top:0;right:50%;margin-right:-130px;background:white;border:1.5px solid var(--lav);border-radius:14px 14px 14px 0;padding:6px 12px;font-size:0.75rem;font-weight:700;color:var(--lav-d);white-space:nowrap;box-shadow:0 2px 8px rgba(123,109,201,0.15);animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes bubblePop{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+
+/* ring timer */
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;margin-bottom:0.8rem;}
+.ring-svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(195,185,240,0.25);stroke-width:8;}
+.ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s linear,stroke 0.5s;}
+.ring-inner{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.timer-display{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:600;color:var(--lav-d);line-height:1;letter-spacing:-0.02em;}
+.timer-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-xs);}
+
+/* pomodoro dots */
+.pomo-dots{display:flex;justify-content:center;gap:8px;margin-bottom:0.8rem;}
+.pomo-dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--lav);background:transparent;transition:all 0.3s;}
+.pomo-dot.done{background:var(--pink-d);border-color:var(--pink-d);}
+.pomo-dot.current{background:var(--lav);border-color:var(--lav-d);box-shadow:0 0 0 3px rgba(195,185,240,0.3);animation:dotPulse 1s ease-in-out infinite;}
+@keyframes dotPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* session type badge */
+.session-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:0.8rem;}
+.badge-focus{background:var(--lav-l);color:var(--lav-d);}
+.badge-break{background:var(--mint-l);color:var(--mint-d);}
+.badge-long{background:var(--peach-l);color:#b5651d;}
+
+/* controls */
+.controls{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:0.6rem;}
+.ctrl-round{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:1.1rem;cursor:pointer;transition:all 0.2s;}
+.ctrl-round:hover{background:var(--lav-l);border-color:var(--lav);}
+.main-btn{width:64px;height:64px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--lav-d),var(--pink-d));color:white;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 20px rgba(123,109,201,0.35);transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+.main-btn:hover{transform:scale(1.07);box-shadow:0 8px 28px rgba(123,109,201,0.45);}
+.main-btn:active{transform:scale(0.97);}
+.main-btn.running{animation:btnPulse 2s ease-in-out infinite;}
+@keyframes btnPulse{0%,100%{box-shadow:0 4px 20px rgba(123,109,201,0.35)}50%{box-shadow:0 4px 32px rgba(123,109,201,0.6)}}
+
+/* custom time row */
+.custom-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;}
+.custom-row label{font-size:0.72rem;color:var(--text-xs);font-weight:700;}
+.time-spin{width:52px;padding:5px 8px;border-radius:10px;border:1.5px solid var(--border);background:var(--cream);font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;color:var(--text);text-align:center;outline:none;}
+.time-spin:focus{border-color:var(--lav);}
+.set-btn{padding:5px 12px;border-radius:10px;border:none;background:var(--lav-l);color:var(--lav-d);font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.set-btn:hover{background:var(--lav);color:white;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;animation:fadeUp 0.4s 0.15s ease both;}
+.stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:12px 10px;text-align:center;box-shadow:var(--shadow);}
+.stat-num{font-size:1.3rem;font-weight:800;color:var(--lav-d);line-height:1;}
+.stat-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-xs);margin-top:3px;}
+
+/* ── SESSION LOG ── */
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;box-shadow:var(--shadow);margin-bottom:14px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.card-title{font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-s);}
+.card-action{font-size:0.75rem;color:var(--pink-d);font-weight:700;cursor:pointer;}
+
+.log-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--cream);border:1px solid var(--border);margin-bottom:6px;}
+.log-icon{font-size:1rem;flex-shrink:0;}
+.log-info{flex:1;}
+.log-subject{font-size:0.82rem;font-weight:700;color:var(--text);}
+.log-time{font-size:0.7rem;color:var(--text-xs);}
+.log-dur{font-size:0.8rem;font-weight:800;color:var(--lav-d);white-space:nowrap;}
+.log-stars{font-size:0.72rem;color:#b5930a;font-weight:700;}
+
+/* subject progress */
+.subject-bar-wrap{margin-bottom:8px;}
+.subject-bar-top{display:flex;justify-content:space-between;font-size:0.78rem;font-weight:700;margin-bottom:4px;}
+.subject-bar-bg{height:8px;background:var(--lav-l);border-radius:4px;overflow:hidden;}
+.subject-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--lav),var(--pink));transition:width 0.8s cubic-bezier(0.34,1.56,0.64,1);}
+
+/* bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100vw);background:rgba(255,248,244,0.95);backdrop-filter:blur(16px);border-top:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:10px 8px 14px;z-index:100;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px;border-radius:12px;transition:all 0.2s;text-decoration:none;}
+.nav-icon{font-size:1.3rem;}.nav-label{font-size:0.6rem;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:0.05em;}
+.nav-item.active .nav-label{color:var(--lav-d);}
+.nav-item:hover{background:var(--lav-l);}
+.nav-center{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--lav));display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 18px rgba(196,82,122,0.38);transition:transform 0.2s;margin-top:-20px;}
+.nav-center:hover{transform:scale(1.1) rotate(10deg);}
+
+/* toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(255,255,255,0.96);border:1.5px solid var(--lav-l);border-radius:20px;padding:10px 20px;font-size:0.82rem;font-weight:700;color:var(--text);box-shadow:0 4px 20px rgba(123,109,201,0.15);z-index:150;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s;opacity:0;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* completion overlay */
+.overlay{display:none;position:fixed;inset:0;background:rgba(90,59,74,0.45);backdrop-filter:blur(8px);z-index:200;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.overlay-card{background:var(--white);border-radius:28px;padding:2rem 1.8rem;width:min(340px,88vw);text-align:center;animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;border:2px solid var(--lav-l);}
+@keyframes popIn{from{opacity:0;transform:scale(0.75)}to{opacity:1;transform:scale(1)}}
+.overlay-card h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--lav-d);margin-bottom:0.3rem;}
+.overlay-card p{font-size:0.85rem;color:var(--text-s);margin-bottom:1.2rem;}
+.overlay-stars{font-size:2rem;margin-bottom:0.8rem;animation:starBounce 0.6s ease both;}
+@keyframes starBounce{from{transform:scale(0)}to{transform:scale(1)}}
+.overlay-btn{padding:11px 28px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--lav-d),var(--pink-d));color:white;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.9rem;cursor:pointer;transition:transform 0.2s;}
+.overlay-btn:hover{transform:scale(1.05);}
+
+/* confetti */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:300;}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="page">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="back-btn" onclick="window.location.href='bloom-dashboard.html'">←</div>
+    <div class="topbar-center">
+      <div class="topbar-title">⏱️ Study Timer</div>
+      <div class="topbar-sub" id="topSub">Focus, bloom, repeat 🌸</div>
+    </div>
+    <div class="stars-chip">⭐ <span id="starDisplay">0</span></div>
+  </div>
+
+  <!-- Mode selector -->
+  <div class="mode-row">
+    <div class="mode-btn active" id="mode-pomo"   onclick="setMode('pomodoro')">🍅 Pomodoro</div>
+    <div class="mode-btn"       id="mode-short"   onclick="setMode('short')">☕ Short</div>
+    <div class="mode-btn"       id="mode-long"    onclick="setMode('long')">📚 Long</div>
+    <div class="mode-btn"       id="mode-custom"  onclick="setMode('custom')">✨ Custom</div>
+  </div>
+
+  <!-- Subject pills -->
+  <div class="subject-row" id="subjectRow">
+    <div class="subject-pill active" onclick="setSubject(this,'Biology 🧬')">Biology 🧬</div>
+    <div class="subject-pill" onclick="setSubject(this,'Maths 📐')">Maths 📐</div>
+    <div class="subject-pill" onclick="setSubject(this,'History 📜')">History 📜</div>
+    <div class="subject-pill" onclick="setSubject(this,'English ✍️')">English ✍️</div>
+    <div class="subject-pill" onclick="setSubject(this,'Physics ⚡')">Physics ⚡</div>
+    <div class="subject-pill" onclick="setSubject(this,'Art 🎨')">Art 🎨</div>
+    <div class="subject-pill" onclick="setSubject(this,'Languages 🌍')">Languages 🌍</div>
+  </div>
+
+  <!-- Timer card -->
+  <div class="timer-card">
+
+    <!-- Mascot -->
+    <div class="mascot-area">
+      <svg class="mascot-svg" id="mascotSvg" width="100" height="110" viewBox="0 0 100 110" xmlns="http://www.w3.org/2000/svg">
+        <!-- Petals -->
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#C3B9F0" opacity="0.85"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#C3B9F0" opacity="0.85" transform="rotate(45 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#C3B9F0" opacity="0.85" transform="rotate(90 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#C3B9F0" opacity="0.85" transform="rotate(135 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#EAE6FF" opacity="0.7" transform="rotate(22.5 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#EAE6FF" opacity="0.7" transform="rotate(67.5 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#EAE6FF" opacity="0.7" transform="rotate(112.5 50 50)"/>
+        <ellipse cx="50" cy="22" rx="9" ry="14" fill="#EAE6FF" opacity="0.7" transform="rotate(157.5 50 50)"/>
+        <!-- Head -->
+        <circle cx="50" cy="50" r="26" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1.5"/>
+        <!-- Cheeks -->
+        <ellipse cx="36" cy="56" rx="6" ry="4" fill="#F9B8C8" opacity="0.65"/>
+        <ellipse cx="64" cy="56" rx="6" ry="4" fill="#F9B8C8" opacity="0.65"/>
+        <!-- Eyes - default happy -->
+        <g id="eyeGroup">
+          <ellipse cx="42" cy="47" rx="4" ry="5" fill="#5A3B4A"/>
+          <ellipse cx="58" cy="47" rx="4" ry="5" fill="#5A3B4A"/>
+          <circle cx="43.5" cy="45.5" r="1.5" fill="white"/>
+          <circle cx="59.5" cy="45.5" r="1.5" fill="white"/>
+        </g>
+        <!-- Mouth -->
+        <path id="mouthPath" d="M41,58 Q50,66 59,58" stroke="#C4527A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Bow -->
+        <path d="M38,29 Q44,23 50,29 Q44,35 38,29z" fill="#7B6DC9"/>
+        <path d="M50,29 Q56,23 62,29 Q56,35 50,29z" fill="#7B6DC9"/>
+        <circle cx="50" cy="29" r="3" fill="#534AB7"/>
+        <!-- Body -->
+        <path d="M28,82 Q50,74 72,82 L76,102 Q50,110 24,102z" fill="#EAE6FF"/>
+        <!-- Dress details -->
+        <path d="M24,102 Q50,110 76,102" stroke="#C3B9F0" stroke-width="2" fill="none"/>
+        <!-- Arms - idle -->
+        <ellipse id="armL" cx="22" cy="86" rx="8" ry="4.5" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1" transform="rotate(-25 22 86)"/>
+        <ellipse id="armR" cx="78" cy="86" rx="8" ry="4.5" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1" transform="rotate(25 78 86)"/>
+        <!-- Book in hand (idle) -->
+        <rect id="bookIcon" x="8" y="82" width="14" height="10" rx="2" fill="#C3B9F0" stroke="#7B6DC9" stroke-width="1"/>
+        <line x1="15" y1="82" x2="15" y2="92" stroke="#7B6DC9" stroke-width="0.8"/>
+      </svg>
+      <div class="mascot-bubble" id="mascotBubble">Let's study! 💜</div>
+    </div>
+
+    <!-- Session badge -->
+    <div class="session-badge badge-focus" id="sessionBadge">FOCUS SESSION</div>
+
+    <!-- Ring timer -->
+    <div class="ring-wrap">
+      <svg class="ring-svg" id="ringSvg" width="180" height="180" viewBox="0 0 180 180">
+        <circle class="ring-bg" cx="90" cy="90" r="78"/>
+        <circle class="ring-fill" id="ringFill" cx="90" cy="90" r="78"
+          stroke="url(#ringGrad)"
+          stroke-dasharray="490" stroke-dashoffset="0"/>
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#C3B9F0"/>
+            <stop offset="100%" stop-color="#F2A7C3"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="ring-inner">
+        <div class="timer-display" id="timerDisplay">25:00</div>
+        <div class="timer-label"  id="timerLabel">ready</div>
+      </div>
+    </div>
+
+    <!-- Pomodoro dots -->
+    <div class="pomo-dots" id="pomoDots"></div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="ctrl-round" title="Reset" onclick="resetTimer()">↺</div>
+      <button class="main-btn" id="mainBtn" onclick="toggleTimer()">▶</button>
+      <div class="ctrl-round" title="Skip" onclick="skipSession()">⏭</div>
+    </div>
+
+    <!-- Custom time -->
+    <div class="custom-row" id="customRow" style="display:none">
+      <label>Focus (min)</label>
+      <input type="number" class="time-spin" id="customFocus" value="25" min="1" max="90"/>
+      <label>Break</label>
+      <input type="number" class="time-spin" id="customBreak" value="5" min="1" max="30"/>
+      <button class="set-btn" onclick="applyCustom()">Set</button>
+    </div>
+
+  </div><!-- /timer-card -->
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="statSessions">0</div>
+      <div class="stat-label">Sessions today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statMinutes">0</div>
+      <div class="stat-label">Mins focused</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statStreak">3</div>
+      <div class="stat-label">Day streak 🔥</div>
+    </div>
+  </div>
+
+  <!-- Subject progress -->
+  <div class="card" style="animation:fadeUp 0.4s 0.2s ease both">
+    <div class="card-header">
+      <div class="card-title">📊 Subject progress</div>
+      <div class="card-action" onclick="showToast('Full stats coming soon!')">Details</div>
+    </div>
+    <div id="subjectBars"></div>
+  </div>
+
+  <!-- Session log -->
+  <div class="card" style="animation:fadeUp 0.4s 0.25s ease both">
+    <div class="card-header">
+      <div class="card-title">📋 Today's log</div>
+      <div class="card-action" onclick="clearLog()">Clear</div>
+    </div>
+    <div id="sessionLog">
+      <p style="font-size:0.82rem;color:var(--text-xs);text-align:center;padding:0.8rem 0">No sessions yet — start focusing! 💜</p>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Completion overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <div class="overlay-stars" id="overlayStars">⭐⭐⭐</div>
+    <h2 id="overlayTitle">Session complete!</h2>
+    <p id="overlayMsg">Amazing work! You crushed that focus session 🌸</p>
+    <div style="font-size:0.85rem;font-weight:800;color:#b5930a;margin-bottom:1.2rem" id="overlayEarned">+15 stars earned!</div>
+    <button class="overlay-btn" onclick="closeOverlay()">Keep going ✦</button>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="bloom-dashboard.html">
+    <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+  </a>
+  <a class="nav-item" href="#" onclick="showToast('Planner coming soon! 📅')">
+    <span class="nav-icon">📅</span><span class="nav-label">Planner</span>
+  </a>
+  <div class="nav-center" onclick="window.location.href='bloom-journal.html'">📓</div>
+  <a class="nav-item active" href="#">
+    <span class="nav-icon">⏱️</span><span class="nav-label">Timer</span>
+  </a>
+  <a class="nav-item" href="#" onclick="showToast('Profile coming soon! 🌷')">
+    <span class="nav-icon">🌷</span><span class="nav-label">Profile</span>
+  </a>
+</nav>
+
+<div class="toast" id="toast"></div>
+<canvas class="confetti" id="confettiCanvas" style="display:none"></canvas>
+
+<script>
+// ── State ──
+const MODES = {
+  pomodoro: { focus:25, shortBreak:5,  longBreak:15, label:'Pomodoro' },
+  short:    { focus:15, shortBreak:3,  longBreak:10, label:'Short' },
+  long:     { focus:50, shortBreak:10, longBreak:20, label:'Long Study' },
+  custom:   { focus:25, shortBreak:5,  longBreak:15, label:'Custom' },
+};
+
+let mode         = 'pomodoro';
+let sessionType  = 'focus'; // focus | shortBreak | longBreak
+let pomoCycle    = 0; // 0-3 focus sessions then long break
+let totalPomos   = 0;
+let timeLeft     = 25 * 60;
+let totalTime    = 25 * 60;
+let running      = false;
+let interval     = null;
+let currentSubj  = 'Biology 🧬';
+let sessionStart = null;
+let stars        = parseInt(localStorage.getItem('bloom_stars') || '47');
+let sessionLog   = JSON.parse(localStorage.getItem('bloom_log') || '[]');
+let subjectMins  = JSON.parse(localStorage.getItem('bloom_subj') || '{}');
+let todaySessions= 0;
+let todayMins    = 0;
+
+const CIRCUMFERENCE = 490;
+
+// mascot states
+const mascotStates = {
+  idle:    { eyes:`<ellipse cx="42" cy="47" rx="4" ry="5" fill="#5A3B4A"/><ellipse cx="58" cy="47" rx="4" ry="5" fill="#5A3B4A"/><circle cx="43.5" cy="45.5" r="1.5" fill="white"/><circle cx="59.5" cy="45.5" r="1.5" fill="white"/>`, mouth:`M41,58 Q50,66 59,58`, bubble:'Let\'s study! 💜' },
+  focus:   { eyes:`<ellipse cx="42" cy="48" rx="4" ry="3.5" fill="#5A3B4A"/><ellipse cx="58" cy="48" rx="4" ry="3.5" fill="#5A3B4A"/><circle cx="43.5" cy="47" r="1.2" fill="white"/><circle cx="59.5" cy="47" r="1.2" fill="white"/>`, mouth:`M43,60 Q50,64 57,60`, bubble:'You\'ve got this! 💪' },
+  break:   { eyes:`<path d="M38,47 Q42,43 46,47" stroke="#5A3B4A" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M54,47 Q58,43 62,47" stroke="#5A3B4A" stroke-width="2" fill="none" stroke-linecap="round"/>`, mouth:`M41,58 Q50,66 59,58`, bubble:'Rest time! ☕' },
+  done:    { eyes:`<path d="M38,49 Q42,44 46,49" stroke="#5A3B4A" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M54,49 Q58,44 62,49" stroke="#5A3B4A" stroke-width="2.5" fill="none" stroke-linecap="round"/>`, mouth:`M40,57 Q50,68 60,57`, bubble:'Amazing work!! 🎉' },
+};
+
+const sessionMessages = {
+  focus: ['You\'re doing amazing! 💜','Stay focused, you got this! ✨','Keep going, gorgeous! 🌸','In the zone! 🔥','Almost there! 💪'],
+  shortBreak: ['Take a breath 🌿','Stretch a little! 🧘','You deserve this break ☕','Rest those eyes 👀','Hydrate! 💧'],
+  longBreak: ['Big break! You earned it 🌸','Walk around, you legend 🚶','Snack time! 🍓','You\'re doing so well 🌺','Proud of you! 🎀'],
+};
+
+// ── Init ──
+function init() {
+  document.getElementById('starDisplay').textContent = stars;
+  renderPomoDots();
+  renderSubjectBars();
+  renderLog();
+  updateRing(1);
+}
+
+// ── Mode ──
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mode-' + m).classList.add('active');
+  document.getElementById('customRow').style.display = m === 'custom' ? 'flex' : 'none';
+  if (m !== 'custom') { resetTimer(); }
+}
+
+function applyCustom() {
+  MODES.custom.focus      = parseInt(document.getElementById('customFocus').value) || 25;
+  MODES.custom.shortBreak = parseInt(document.getElementById('customBreak').value) || 5;
+  resetTimer();
+  showToast('Custom timer set! ✨');
+}
+
+// ── Subject ──
+function setSubject(el, subj) {
+  document.querySelectorAll('.subject-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentSubj = subj;
+  showToast('Subject: ' + subj);
+}
+
+// ── Timer core ──
+function toggleTimer() {
+  if (running) { pauseTimer(); } else { startTimer(); }
+}
+
+function startTimer() {
+  running = true;
+  sessionStart = Date.now();
+  document.getElementById('mainBtn').textContent = '⏸';
+  document.getElementById('mainBtn').classList.add('running');
+  document.getElementById('timerLabel').textContent = sessionType === 'focus' ? 'focusing…' : 'resting…';
+  setMascot(sessionType === 'focus' ? 'focus' : 'break');
+
+  interval = setInterval(() => {
+    timeLeft--;
+    updateDisplay();
+    updateRing(timeLeft / totalTime);
+
+    // Change mascot bubble every 90s
+    if (timeLeft % 90 === 0 && timeLeft > 0) {
+      const msgs = sessionMessages[sessionType];
+      document.getElementById('mascotBubble').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    }
+
+    if (timeLeft <= 0) { sessionComplete(); }
+  }, 1000);
+}
+
+function pauseTimer() {
+  running = false;
+  clearInterval(interval);
+  document.getElementById('mainBtn').textContent = '▶';
+  document.getElementById('mainBtn').classList.remove('running');
+  document.getElementById('timerLabel').textContent = 'paused';
+  setMascot('idle');
+  showToast('Paused — you can do it! 💜');
+}
+
+function resetTimer() {
+  running = false;
+  clearInterval(interval);
+  sessionType = 'focus';
+  timeLeft = totalTime = MODES[mode].focus * 60;
+  document.getElementById('mainBtn').textContent = '▶';
+  document.getElementById('mainBtn').classList.remove('running');
+  document.getElementById('timerLabel').textContent = 'ready';
+  document.getElementById('sessionBadge').textContent = 'FOCUS SESSION';
+  document.getElementById('sessionBadge').className = 'session-badge badge-focus';
+  updateDisplay();
+  updateRing(1);
+  setMascot('idle');
+}
+
+function skipSession() {
+  clearInterval(interval); running = false;
+  sessionComplete(true);
+}
+
+function sessionComplete(skipped = false) {
+  clearInterval(interval); running = false;
+  document.getElementById('mainBtn').textContent = '▶';
+  document.getElementById('mainBtn').classList.remove('running');
+
+  if (sessionType === 'focus') {
+    // Log completed session
+    const elapsed = skipped ? Math.round((totalTime - timeLeft) / 60) : MODES[mode].focus;
+    logSession(currentSubj, elapsed);
+    todaySessions++;
+    todayMins += elapsed;
+    document.getElementById('statSessions').textContent = todaySessions;
+    document.getElementById('statMinutes').textContent  = todayMins;
+
+    // Stars
+    const earned = Math.max(5, elapsed);
+    stars += earned;
+    localStorage.setItem('bloom_stars', stars);
+    document.getElementById('starDisplay').textContent = stars;
+
+    // Pomo progress
+    pomoCycle++;
+    totalPomos++;
+    renderPomoDots();
+
+    setMascot('done');
+    if (!skipped) {
+      spawnConfetti();
+      showOverlay('Session complete! 🌸',
+        pomoCycle >= 4 ? 'You completed 4 pomodoros — long break time! 🏆' : `Gorgeous focus session! Break time 🌸`,
+        earned);
+    }
+
+    // Next: break
+    if (pomoCycle >= 4) {
+      pomoCycle = 0;
+      sessionType = 'longBreak';
+      timeLeft = totalTime = MODES[mode].longBreak * 60;
+      document.getElementById('sessionBadge').textContent = 'LONG BREAK';
+      document.getElementById('sessionBadge').className = 'session-badge badge-long';
+    } else {
+      sessionType = 'shortBreak';
+      timeLeft = totalTime = MODES[mode].shortBreak * 60;
+      document.getElementById('sessionBadge').textContent = 'SHORT BREAK';
+      document.getElementById('sessionBadge').className = 'session-badge badge-break';
+    }
+  } else {
+    // Break done → back to focus
+    sessionType = 'focus';
+    timeLeft = totalTime = MODES[mode].focus * 60;
+    document.getElementById('sessionBadge').textContent = 'FOCUS SESSION';
+    document.getElementById('sessionBadge').className = 'session-badge badge-focus';
+    setMascot('idle');
+    showToast('Break over — let\'s go! 💜');
+  }
+
+  updateDisplay();
+  updateRing(1);
+  renderSubjectBars();
+}
+
+// ── Display ──
+function updateDisplay() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  document.getElementById('timerDisplay').textContent =
+    String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+function updateRing(fraction) {
+  const offset = CIRCUMFERENCE * (1 - fraction);
+  document.getElementById('ringFill').style.strokeDashoffset = offset;
+}
+
+// ── Pomo dots ──
+function renderPomoDots() {
+  const container = document.getElementById('pomoDots');
+  container.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const d = document.createElement('div');
+    d.className = 'pomo-dot' + (i < pomoCycle ? ' done' : i === pomoCycle ? ' current' : '');
+    container.appendChild(d);
+  }
+}
+
+// ── Mascot ──
+function setMascot(state) {
+  const s = mascotStates[state] || mascotStates.idle;
+  document.getElementById('eyeGroup').innerHTML = s.eyes;
+  document.getElementById('mouthPath').setAttribute('d', s.mouth);
+  const bubble = document.getElementById('mascotBubble');
+  bubble.textContent = s.bubble;
+  bubble.style.animation = 'none';
+  bubble.offsetHeight;
+  bubble.style.animation = 'bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1) both';
+
+  // Mascot bounce animation when focusing
+  const svg = document.getElementById('mascotSvg');
+  if (state === 'focus') {
+    svg.style.animation = 'mascotBounce 2s ease-in-out infinite';
+  } else if (state === 'done') {
+    svg.style.animation = 'mascotDance 0.5s ease-in-out 3';
+  } else {
+    svg.style.animation = 'mascotFloat 4s ease-in-out infinite';
+  }
+}
+
+// Add mascot animations to head
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes mascotBounce{0%,100%{transform:translateY(0) rotate(0deg)}40%{transform:translateY(-6px) rotate(-2deg)}60%{transform:translateY(-4px) rotate(2deg)}}
+  @keyframes mascotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes mascotDance{0%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}100%{transform:rotate(0deg)}}
+`;
+document.head.appendChild(style);
+document.getElementById('mascotSvg').style.animation = 'mascotFloat 4s ease-in-out infinite';
+
+// ── Log ──
+const subjectEmojis = {'Biology 🧬':'🧬','Maths 📐':'📐','History 📜':'📜','English ✍️':'✍️','Physics ⚡':'⚡','Art 🎨':'🎨','Languages 🌍':'🌍'};
+
+function logSession(subj, mins) {
+  const entry = {
+    subj, mins,
+    time: new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}),
+    stars: Math.max(5, mins),
+  };
+  sessionLog.unshift(entry);
+  if (sessionLog.length > 20) sessionLog.pop();
+  localStorage.setItem('bloom_log', JSON.stringify(sessionLog));
+
+  subjectMins[subj] = (subjectMins[subj] || 0) + mins;
+  localStorage.setItem('bloom_subj', JSON.stringify(subjectMins));
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('sessionLog');
+  if (!sessionLog.length) {
+    el.innerHTML = '<p style="font-size:0.82rem;color:var(--text-xs);text-align:center;padding:0.8rem 0">No sessions yet — start focusing! 💜</p>';
+    return;
+  }
+  el.innerHTML = sessionLog.slice(0, 5).map(e => `
+    <div class="log-item">
+      <div class="log-icon">${subjectEmojis[e.subj] || '📚'}</div>
+      <div class="log-info">
+        <div class="log-subject">${e.subj}</div>
+        <div class="log-time">${e.time}</div>
+      </div>
+      <div>
+        <div class="log-dur">${e.mins} min</div>
+        <div class="log-stars">+${e.stars} ⭐</div>
+      </div>
+    </div>`).join('');
+}
+
+function clearLog() {
+  sessionLog = [];
+  localStorage.removeItem('bloom_log');
+  renderLog();
+  showToast('Log cleared ✨');
+}
+
+// ── Subject bars ──
+function renderSubjectBars() {
+  const el = document.getElementById('subjectBars');
+  const subjects = ['Biology 🧬','Maths 📐','History 📜','English ✍️','Physics ⚡'];
+  const maxMins = Math.max(60, ...subjects.map(s => subjectMins[s] || 0));
+  el.innerHTML = subjects.map(s => {
+    const mins = subjectMins[s] || 0;
+    const pct = Math.round((mins / maxMins) * 100);
+    return `<div class="subject-bar-wrap">
+      <div class="subject-bar-top"><span>${s}</span><span style="color:var(--lav-d)">${mins} min</span></div>
+      <div class="subject-bar-bg"><div class="subject-bar-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Overlay ──
+function showOverlay(title, msg, earned) {
+  document.getElementById('overlayTitle').textContent  = title;
+  document.getElementById('overlayMsg').textContent    = msg;
+  document.getElementById('overlayEarned').textContent = `+${earned} stars earned! ⭐`;
+  const stars3 = earned >= 25 ? '⭐⭐⭐' : earned >= 15 ? '⭐⭐' : '⭐';
+  document.getElementById('overlayStars').textContent  = stars3;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+  setMascot('idle');
+}
+
+// ── Confetti ──
+function spawnConfetti() {
+  const canvas = document.getElementById('confettiCanvas');
+  canvas.style.display = 'block';
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+  const cols = ['#C3B9F0','#F4C0D1','#A8DEC9','#FAC775','#EAE6FF','#7B6DC9'];
+  const particles = Array.from({length:70},()=>({
+    x:Math.random()*canvas.width, y:-10,
+    vx:(Math.random()-0.5)*4, vy:Math.random()*5+2,
+    r:Math.random()*6+3, color:cols[Math.floor(Math.random()*cols.length)], rot:Math.random()*360
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.rot+=4;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);ctx.fillStyle=p.color;ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);ctx.restore();});
+    frame++;
+    if(frame<100)requestAnimationFrame(draw);
+    else{ctx.clearRect(0,0,canvas.width,canvas.height);canvas.style.display='none';}
+  }
+  draw();
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+init();
+</script>
+</body>
+</html>

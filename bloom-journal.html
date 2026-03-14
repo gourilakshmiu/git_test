@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bloom — Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;500;600;700;800&family=Caveat:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --pink:    #F2A7C3; --pink-l: #FAD9E8; --pink-d: #C4527A;
+  --lav:     #C3B9F0; --lav-l:  #EAE6FF; --lav-d:  #7B6DC9;
+  --mint:    #A8DEC9; --mint-l: #D8F3EA; --mint-d: #3B9B75;
+  --peach:   #F8C8A0; --peach-l:#FDE8D4;
+  --yellow:  #FAE07A; --yellow-l:#FEF8D0;
+  --cream:   #FFF8F4; --white: #FFFFFF;
+  --text:    #5A3B4A; --text-s: #9A6B7E; --text-xs:#C4A0B0;
+  --border:  rgba(242,167,195,0.25);
+  --card:    rgba(255,255,255,0.85);
+  --shadow:  0 4px 24px rgba(196,82,122,0.10);
+  --r:       20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:90px;overflow-x:hidden;}
+
+/* blobs */
+.blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:0.3;pointer-events:none;z-index:0;animation:drift 10s ease-in-out infinite alternate;}
+.b1{width:320px;height:320px;background:var(--pink-l);top:-60px;left:-60px;}
+.b2{width:240px;height:240px;background:var(--lav-l);bottom:80px;right:-50px;animation-delay:-4s;}
+.b3{width:160px;height:160px;background:var(--mint-l);top:40%;left:60%;animation-delay:-2s;}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(18px,14px)}}
+
+.page{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 16px;}
+
+/* top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 0 12px;animation:slideDown 0.5s ease both;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+.back-btn{width:38px;height:38px;border-radius:50%;background:var(--card);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all 0.2s;}
+.back-btn:hover{background:var(--pink-l);border-color:var(--pink);}
+.topbar-title{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:600;color:var(--pink-d);}
+.topbar-sub{font-size:0.7rem;color:var(--text-xs);text-align:center;}
+.new-btn{background:linear-gradient(135deg,var(--pink),var(--lav));color:white;border:none;padding:8px 16px;border-radius:20px;font-family:'Nunito',sans-serif;font-weight:700;font-size:0.8rem;cursor:pointer;box-shadow:0 3px 12px rgba(196,82,122,0.28);transition:transform 0.2s;}
+.new-btn:hover{transform:scale(1.05);}
+
+/* tabs */
+.tabs{display:flex;gap:8px;margin-bottom:14px;animation:fadeUp 0.4s 0.05s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tab{flex:1;padding:9px;text-align:center;border-radius:14px;font-size:0.78rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text-s);transition:all 0.2s;}
+.tab.active{background:linear-gradient(135deg,var(--pink-l),var(--lav-l));border-color:var(--pink);color:var(--pink-d);}
+.tab:hover:not(.active){border-color:var(--pink);color:var(--pink-d);}
+
+/* ── EDITOR VIEW ── */
+#editorView{animation:fadeUp 0.4s ease both;}
+
+/* date + mood row */
+.entry-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.entry-date{font-size:0.78rem;font-weight:700;color:var(--text-s);}
+.mood-pills{display:flex;gap:6px;}
+.mood-pill{font-size:0.72rem;padding:4px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;transition:all 0.15s;font-weight:600;}
+.mood-pill.sel{background:var(--pink-l);border-color:var(--pink);color:var(--pink-d);}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:4px;padding:8px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;margin-bottom:10px;flex-wrap:wrap;animation:fadeUp 0.4s 0.08s ease both;}
+.tool-btn{width:32px;height:32px;border-radius:8px;border:none;background:transparent;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;transition:all 0.15s;position:relative;}
+.tool-btn:hover{background:var(--pink-l);}
+.tool-btn.active{background:var(--pink-l);box-shadow:inset 0 0 0 1.5px var(--pink);}
+.tool-sep{width:1px;height:22px;background:var(--border);margin:0 2px;flex-shrink:0;}
+
+/* highlight colours */
+.hl-dot{width:14px;height:14px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;}
+.hl-dot:hover,.hl-dot.active{transform:scale(1.3);border-color:#999;}
+.hl-yellow{background:#FAE07A;} .hl-pink{background:#F4C0D1;} .hl-mint{background:#A8DEC9;} .hl-lav{background:#C3B9F0;}
+
+/* writing area */
+.paper-wrap{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:12px;animation:fadeUp 0.4s 0.1s ease both;position:relative;}
+.paper-lines{position:absolute;inset:0;pointer-events:none;z-index:0;}
+.paper-title-row{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border);}
+.paper-title-row .entry-icon{font-size:1.3rem;}
+.title-input{flex:1;border:none;background:transparent;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;color:var(--pink-d);outline:none;}
+.title-input::placeholder{color:var(--text-xs);}
+.word-count{font-size:0.65rem;color:var(--text-xs);white-space:nowrap;}
+
+.editor{min-height:240px;padding:14px 16px;font-family:'Caveat',cursive;font-size:1.05rem;line-height:2.1;color:var(--text);outline:none;position:relative;z-index:1;background:transparent;}
+.editor:empty::before{content:attr(data-placeholder);color:var(--text-xs);pointer-events:none;}
+
+/* sticker tray */
+.sticker-tray{display:none;flex-wrap:wrap;gap:8px;padding:10px 12px;background:var(--lav-l);border-top:1px solid var(--border);}
+.sticker-tray.open{display:flex;}
+.sticker{font-size:1.5rem;cursor:pointer;transition:transform 0.15s;padding:2px;}
+.sticker:hover{transform:scale(1.3);}
+
+/* floating sticker on page */
+.placed-sticker{position:absolute;font-size:1.8rem;cursor:grab;user-select:none;z-index:10;animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes popIn{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+
+/* sticky note */
+.sticky-note{background:#FEF8D0;border:1px solid #FAE07A;border-radius:10px;padding:10px 12px;margin-bottom:10px;position:relative;font-family:'Caveat',cursive;font-size:0.95rem;color:#7d6000;min-height:70px;box-shadow:2px 3px 8px rgba(250,224,122,0.3);animation:fadeUp 0.3s ease both;}
+.sticky-close{position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;font-size:0.8rem;color:#b5930a;opacity:0.6;}
+.sticky-close:hover{opacity:1;}
+.sticky-input{width:100%;background:transparent;border:none;outline:none;font-family:'Caveat',cursive;font-size:0.95rem;color:#7d6000;resize:none;min-height:50px;}
+
+/* action row */
+.action-row{display:flex;gap:8px;margin-bottom:14px;animation:fadeUp 0.4s 0.15s ease both;}
+.action-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:14px;border:1.5px solid var(--border);background:var(--card);font-size:0.78rem;font-weight:700;color:var(--text-s);cursor:pointer;transition:all 0.2s;}
+.action-btn:hover{border-color:var(--pink);background:var(--pink-l);color:var(--pink-d);}
+.action-btn .ab-icon{font-size:1rem;}
+
+/* save button */
+.save-btn{width:100%;padding:13px;border-radius:var(--r);border:none;background:linear-gradient(135deg,var(--pink),var(--lav));color:white;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(196,82,122,0.28);transition:transform 0.2s;letter-spacing:0.03em;animation:fadeUp 0.4s 0.2s ease both;margin-bottom:14px;}
+.save-btn:hover{transform:translateY(-2px);}
+.save-btn:active{transform:translateY(0);}
+
+/* ── ENTRIES VIEW ── */
+#entriesView{display:none;animation:fadeUp 0.4s ease both;}
+
+/* search */
+.search-bar{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:8px 14px;margin-bottom:14px;}
+.search-bar input{flex:1;border:none;background:transparent;font-family:'Nunito',sans-serif;font-size:0.88rem;color:var(--text);outline:none;}
+.search-bar input::placeholder{color:var(--text-xs);}
+
+/* entry card */
+.entry-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:10px;cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow);}
+.entry-card:hover{border-color:var(--pink);transform:translateY(-2px);box-shadow:0 8px 28px rgba(196,82,122,0.13);}
+.entry-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;}
+.entry-card-title{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--text);}
+.entry-card-date{font-size:0.68rem;color:var(--text-xs);white-space:nowrap;margin-left:8px;}
+.entry-card-preview{font-size:0.82rem;color:var(--text-s);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.entry-card-footer{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.entry-mood-badge{font-size:0.68rem;padding:2px 8px;border-radius:10px;background:var(--pink-l);color:var(--pink-d);font-weight:700;}
+.entry-tag{font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:700;}
+.tag-grateful{background:var(--mint-l);color:var(--mint-d);}
+.tag-reflection{background:var(--lav-l);color:var(--lav-d);}
+.tag-dreams{background:var(--peach-l);color:#b5651d;}
+.tag-vent{background:#FAEEDA;color:#854F0B;}
+.entry-stickers{margin-left:auto;font-size:0.9rem;}
+
+/* month divider */
+.month-div{font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-xs);margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.month-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* bottom nav */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100vw);background:rgba(255,248,244,0.95);backdrop-filter:blur(16px);border-top:1.5px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:10px 8px 14px;z-index:100;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 10px;border-radius:12px;transition:all 0.2s;text-decoration:none;}
+.nav-icon{font-size:1.3rem;} .nav-label{font-size:0.6rem;font-weight:700;color:var(--text-xs);text-transform:uppercase;letter-spacing:0.05em;}
+.nav-item.active .nav-label{color:var(--pink-d);}
+.nav-item:hover{background:var(--pink-l);}
+.nav-center{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--pink),var(--lav));display:flex;align-items:center;justify-content:center;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 18px rgba(196,82,122,0.38);transition:transform 0.2s;margin-top:-20px;}
+.nav-center:hover{transform:scale(1.1) rotate(10deg);}
+
+/* toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(255,255,255,0.96);border:1.5px solid var(--pink-l);border-radius:20px;padding:10px 20px;font-size:0.82rem;font-weight:700;color:var(--text);box-shadow:0 4px 20px rgba(196,82,122,0.15);z-index:150;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s;opacity:0;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="page">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="back-btn" onclick="window.location.href='bloom-dashboard.html'">←</div>
+    <div style="text-align:center">
+      <div class="topbar-title">📓 My Journal</div>
+      <div class="topbar-sub" id="entryCount">12 entries this month</div>
+    </div>
+    <button class="new-btn" onclick="switchTab('write')">+ New</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" id="tab-write" onclick="switchTab('write')">✍️ Write</div>
+    <div class="tab" id="tab-entries" onclick="switchTab('entries')">📚 Entries</div>
+    <div class="tab" id="tab-prompts" onclick="switchTab('prompts')">💭 Prompts</div>
+  </div>
+
+  <!-- ══ WRITE VIEW ══ -->
+  <div id="editorView">
+
+    <!-- Date + mood -->
+    <div class="entry-meta">
+      <div class="entry-date" id="entryDateLabel">📅 Friday, March 13, 2026</div>
+      <div class="mood-pills">
+        <div class="mood-pill" onclick="pickMood(this,'😊')">😊</div>
+        <div class="mood-pill" onclick="pickMood(this,'🥰')">🥰</div>
+        <div class="mood-pill" onclick="pickMood(this,'😌')">😌</div>
+        <div class="mood-pill" onclick="pickMood(this,'😢')">😢</div>
+        <div class="mood-pill" onclick="pickMood(this,'😤')">😤</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn" title="Bold" onclick="fmt('bold')" id="btn-bold"><b>B</b></button>
+      <button class="tool-btn" title="Italic" onclick="fmt('italic')" id="btn-italic"><i>I</i></button>
+      <button class="tool-btn" title="Underline" onclick="fmt('underline')" id="btn-ul"><u>U</u></button>
+      <div class="tool-sep"></div>
+      <!-- highlight colours -->
+      <div class="hl-dot hl-yellow active" id="hl-yellow" title="Yellow highlight" onclick="setHL(this,'#FAE07A')"></div>
+      <div class="hl-dot hl-pink"   id="hl-pink"   title="Pink highlight"   onclick="setHL(this,'#F4C0D1')"></div>
+      <div class="hl-dot hl-mint"   id="hl-mint"   title="Mint highlight"   onclick="setHL(this,'#A8DEC9')"></div>
+      <div class="hl-dot hl-lav"    id="hl-lav"    title="Lavender highlight" onclick="setHL(this,'#C3B9F0')"></div>
+      <button class="tool-btn" title="Highlight selection" onclick="applyHL()" style="font-size:0.75rem;font-weight:800;color:var(--text-s)">HI</button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" title="Bullet list" onclick="fmt('insertUnorderedList')">•≡</button>
+      <button class="tool-btn" title="Stickers" onclick="toggleStickers()" id="btn-sticker">🌸</button>
+      <button class="tool-btn" title="Add sticky note" onclick="addStickyNote()">📌</button>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" title="Tag: grateful" onclick="addTag('grateful')" style="font-size:0.65rem;font-weight:800">GR</button>
+      <button class="tool-btn" title="Tag: reflection" onclick="addTag('reflection')" style="font-size:0.65rem;font-weight:800">RF</button>
+      <button class="tool-btn" title="Tag: dreams" onclick="addTag('dreams')" style="font-size:0.65rem;font-weight:800">DR</button>
+    </div>
+
+    <!-- Sticky notes area -->
+    <div id="stickyContainer"></div>
+
+    <!-- Paper / editor -->
+    <div class="paper-wrap" id="paperWrap">
+      <svg class="paper-lines" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        <defs><pattern id="lines" patternUnits="userSpaceOnUse" width="100%" height="33.6">
+          <line x1="0" y1="33.5" x2="100%" y2="33.5" stroke="rgba(242,167,195,0.18)" stroke-width="1"/>
+        </pattern></defs>
+        <rect width="100%" height="100%" fill="url(#lines)"/>
+        <line x1="52" y1="0" x2="52" y2="100%" stroke="rgba(195,185,240,0.25)" stroke-width="1"/>
+      </svg>
+
+      <div class="paper-title-row">
+        <div class="entry-icon" id="entryIconBtn" style="cursor:pointer" onclick="cycleIcon()">📓</div>
+        <input class="title-input" id="titleInput" placeholder="Give today's entry a title…" maxlength="80"/>
+        <div class="word-count" id="wordCount">0 words</div>
+      </div>
+
+      <div class="editor" id="editor" contenteditable="true"
+           data-placeholder="Start writing… pour your heart out 🌸"
+           oninput="updateWordCount()" onkeydown="handleKey(event)"></div>
+
+      <!-- Sticker tray -->
+      <div class="sticker-tray" id="stickerTray">
+        <span class="sticker" onclick="placeSticker('🌸')">🌸</span>
+        <span class="sticker" onclick="placeSticker('✨')">✨</span>
+        <span class="sticker" onclick="placeSticker('🦋')">🦋</span>
+        <span class="sticker" onclick="placeSticker('🌙')">🌙</span>
+        <span class="sticker" onclick="placeSticker('⭐')">⭐</span>
+        <span class="sticker" onclick="placeSticker('🌺')">🌺</span>
+        <span class="sticker" onclick="placeSticker('💜')">💜</span>
+        <span class="sticker" onclick="placeSticker('🌷')">🌷</span>
+        <span class="sticker" onclick="placeSticker('🍃')">🍃</span>
+        <span class="sticker" onclick="placeSticker('☁️')">☁️</span>
+        <span class="sticker" onclick="placeSticker('🌈')">🌈</span>
+        <span class="sticker" onclick="placeSticker('💫')">💫</span>
+        <span class="sticker" onclick="placeSticker('🎀')">🎀</span>
+        <span class="sticker" onclick="placeSticker('🫧')">🫧</span>
+        <span class="sticker" onclick="placeSticker('🕊️')">🕊️</span>
+        <span class="sticker" onclick="placeSticker('🌻')">🌻</span>
+      </div>
+    </div>
+
+    <!-- Action row -->
+    <div class="action-row">
+      <div class="action-btn" onclick="addTag('grateful')"><span class="ab-icon">🌿</span>Grateful</div>
+      <div class="action-btn" onclick="addTag('reflection')"><span class="ab-icon">💭</span>Reflect</div>
+      <div class="action-btn" onclick="addTag('dreams')"><span class="ab-icon">🌙</span>Dreams</div>
+      <div class="action-btn" onclick="addTag('vent')"><span class="ab-icon">💨</span>Vent</div>
+    </div>
+
+    <!-- Tags display -->
+    <div id="tagRow" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"></div>
+
+    <!-- Save -->
+    <button class="save-btn" onclick="saveEntry()">Save Entry ✦</button>
+
+  </div><!-- /editorView -->
+
+  <!-- ══ ENTRIES VIEW ══ -->
+  <div id="entriesView">
+    <div class="search-bar">
+      <span style="font-size:1rem">🔍</span>
+      <input id="searchInput" placeholder="Search your entries…" oninput="filterEntries()"/>
+    </div>
+    <div id="entriesList"></div>
+  </div>
+
+  <!-- ══ PROMPTS VIEW ══ -->
+  <div id="promptsView" style="display:none;animation:fadeUp 0.4s ease both;">
+    <div id="promptCards"></div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="bloom-dashboard.html">
+    <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+  </a>
+  <a class="nav-item" href="#" onclick="showToast('Planner coming soon! 📅')">
+    <span class="nav-icon">📅</span><span class="nav-label">Planner</span>
+  </a>
+  <div class="nav-center" onclick="switchTab('write')">📓</div>
+  <a class="nav-item" href="#" onclick="showToast('Timer coming soon! ⏱️')">
+    <span class="nav-icon">⏱️</span><span class="nav-label">Timer</span>
+  </a>
+  <a class="nav-item" href="#" onclick="showToast('Profile coming soon! 🌷')">
+    <span class="nav-icon">🌷</span><span class="nav-label">Profile</span>
+  </a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Tabs ──
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('editorView').style.display   = 'none';
+  document.getElementById('entriesView').style.display  = 'none';
+  document.getElementById('promptsView').style.display  = 'none';
+
+  if (tab === 'write') {
+    document.getElementById('tab-write').classList.add('active');
+    document.getElementById('editorView').style.display = 'block';
+  } else if (tab === 'entries') {
+    document.getElementById('tab-entries').classList.add('active');
+    document.getElementById('entriesView').style.display = 'block';
+    renderEntries();
+  } else {
+    document.getElementById('tab-prompts').classList.add('active');
+    document.getElementById('promptsView').style.display = 'block';
+    renderPrompts();
+  }
+}
+
+// ── Date ──
+const now   = new Date();
+const days  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const months= ['January','February','March','April','May','June','July','August','September','October','November','December'];
+document.getElementById('entryDateLabel').textContent =
+  `📅 ${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+// ── Mood ──
+let selectedMood = '';
+function pickMood(el, mood) {
+  document.querySelectorAll('.mood-pill').forEach(p => p.classList.remove('sel'));
+  el.classList.add('sel'); selectedMood = mood;
+  showToast('Mood: ' + mood);
+}
+
+// ── Formatting ──
+function fmt(cmd) { document.getElementById('editor').focus(); document.execCommand(cmd, false, null); }
+
+let hlColor = '#FAE07A';
+function setHL(el, color) {
+  document.querySelectorAll('.hl-dot').forEach(d => d.classList.remove('active'));
+  el.classList.add('active'); hlColor = color;
+}
+function applyHL() {
+  document.getElementById('editor').focus();
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) { showToast('Select some text first! ✏️'); return; }
+  document.execCommand('hiliteColor', false, hlColor);
+  showToast('Highlighted! 🖊️');
+}
+
+// ── Word count ──
+function updateWordCount() {
+  const text = document.getElementById('editor').innerText.trim();
+  const words = text ? text.split(/\s+/).length : 0;
+  document.getElementById('wordCount').textContent = words + ' word' + (words !== 1 ? 's' : '');
+}
+
+// ── Stickers ──
+function toggleStickers() {
+  const tray = document.getElementById('stickerTray');
+  tray.classList.toggle('open');
+  document.getElementById('btn-sticker').classList.toggle('active', tray.classList.contains('open'));
+}
+
+const icons = ['📓','🌸','🌙','✨','🦋','🌺','💜','🎀'];
+let iconIdx = 0;
+function cycleIcon() {
+  iconIdx = (iconIdx + 1) % icons.length;
+  document.getElementById('entryIconBtn').textContent = icons[iconIdx];
+}
+
+function placeSticker(emoji) {
+  const wrap = document.getElementById('paperWrap');
+  const s = document.createElement('div');
+  s.className = 'placed-sticker';
+  s.textContent = emoji;
+  s.style.top  = (60 + Math.random() * 120) + 'px';
+  s.style.right = (8 + Math.random() * 60) + 'px';
+  s.title = 'Double-click to remove';
+  s.ondblclick = () => s.remove();
+
+  // drag
+  let ox, oy;
+  s.onmousedown = e => {
+    e.preventDefault(); s.style.cursor = 'grabbing';
+    ox = e.clientX - s.offsetLeft; oy = e.clientY - s.offsetTop;
+    document.onmousemove = ev => { s.style.left = (ev.clientX - ox) + 'px'; s.style.top = (ev.clientY - oy) + 'px'; s.style.right = 'auto'; };
+    document.onmouseup = () => { document.onmousemove = null; s.style.cursor = 'grab'; };
+  };
+  wrap.appendChild(s);
+  showToast(emoji + ' sticker added! Double-tap to remove');
+}
+
+// ── Sticky note ──
+function addStickyNote() {
+  const container = document.getElementById('stickyContainer');
+  const note = document.createElement('div');
+  note.className = 'sticky-note';
+  note.innerHTML = `<button class="sticky-close" onclick="this.parentElement.remove()">✕</button>
+    <textarea class="sticky-input" placeholder="Write a quick note…"></textarea>`;
+  container.appendChild(note);
+  note.querySelector('textarea').focus();
+  showToast('Sticky note added! 📌');
+}
+
+// ── Tags ──
+let tags = [];
+function addTag(tag) {
+  if (tags.includes(tag)) return;
+  tags.push(tag);
+  renderTags();
+  showToast('#' + tag + ' tag added');
+}
+function removeTag(tag) { tags = tags.filter(t => t !== tag); renderTags(); }
+const tagColors = { grateful:'tag-grateful', reflection:'tag-reflection', dreams:'tag-dreams', vent:'tag-vent' };
+const tagEmoji  = { grateful:'🌿', reflection:'💭', dreams:'🌙', vent:'💨' };
+function renderTags() {
+  const row = document.getElementById('tagRow');
+  row.innerHTML = tags.map(t =>
+    `<span class="entry-tag ${tagColors[t]||''}" style="cursor:pointer;padding:4px 10px;font-size:0.72rem;"
+       onclick="removeTag('${t}')">${tagEmoji[t]||''} #${t} ✕</span>`
+  ).join('');
+}
+
+// ── Key shortcuts ──
+function handleKey(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveEntry(); }
+}
+
+// ── Save entry ──
+let entries = JSON.parse(localStorage.getItem('bloom_entries') || '[]');
+function saveEntry() {
+  const title   = document.getElementById('titleInput').value.trim() || 'Untitled Entry';
+  const content = document.getElementById('editor').innerHTML.trim();
+  if (!content || content === '') { showToast('Write something first! ✍️'); return; }
+
+  const entry = {
+    id:      Date.now(),
+    title,
+    content,
+    preview: document.getElementById('editor').innerText.slice(0, 120),
+    mood:    selectedMood,
+    tags:    [...tags],
+    icon:    document.getElementById('entryIconBtn').textContent,
+    date:    now.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+    dateRaw: now.toISOString(),
+  };
+  entries.unshift(entry);
+  localStorage.setItem('bloom_entries', JSON.stringify(entries));
+
+  // update star count
+  let stars = parseInt(localStorage.getItem('bloom_stars') || '47') + 10;
+  localStorage.setItem('bloom_stars', stars);
+
+  showToast('Entry saved! +10 stars ✦ 🌸');
+  document.getElementById('titleInput').value = '';
+  document.getElementById('editor').innerHTML = '';
+  tags = []; renderTags(); selectedMood = '';
+  document.querySelectorAll('.mood-pill').forEach(p => p.classList.remove('sel'));
+  updateWordCount();
+  document.getElementById('entryCount').textContent = entries.length + ' entries saved';
+
+  setTimeout(() => switchTab('entries'), 1200);
+}
+
+// ── Render entries ──
+const sampleEntries = [
+  { id:1, title:'First day of spring', preview:'The sunlight today felt so warm and golden. I sat by my window with my coffee and just breathed it all in…', mood:'😊', tags:['grateful'], icon:'🌸', date:'Mar 12, 2026' },
+  { id:2, title:'Study marathon survived!', preview:'Finally finished that biology chapter. It felt impossible at first but I kept going and I am so proud…', mood:'🥰', tags:['reflection'], icon:'📚', date:'Mar 11, 2026' },
+  { id:3, title:'Night thoughts', preview:'Sometimes I think about where I want to be in five years. I want to be someone who chose herself every day…', mood:'😌', tags:['dreams','reflection'], icon:'🌙', date:'Mar 10, 2026' },
+  { id:4, title:'A little vent sesh', preview:'Today was hard. People can be so draining. But I reminded myself that I am not responsible for other people\'s moods…', mood:'😤', tags:['vent'], icon:'💨', date:'Mar 8, 2026' },
+  { id:5, title:'Gratitude list', preview:'Today I am grateful for: warm socks, my favourite playlist, the smell of rain, and the fact that I exist in this moment…', mood:'🥰', tags:['grateful'], icon:'✨', date:'Mar 6, 2026' },
+];
+function getAllEntries() { return [...entries, ...sampleEntries]; }
+
+let searchQ = '';
+function filterEntries() { searchQ = document.getElementById('searchInput').value.toLowerCase(); renderEntries(); }
+
+function renderEntries() {
+  const list = document.getElementById('entriesList');
+  const all  = getAllEntries().filter(e =>
+    !searchQ || e.title.toLowerCase().includes(searchQ) || e.preview.toLowerCase().includes(searchQ)
+  );
+  if (!all.length) { list.innerHTML = '<p style="text-align:center;color:var(--text-xs);padding:2rem 0">No entries yet. Start writing! ✍️</p>'; return; }
+
+  let html = '';
+  let lastMonth = '';
+  all.forEach(e => {
+    const month = e.date ? e.date.slice(0,7) : '';
+    if (month !== lastMonth) {
+      html += `<div class="month-div">${e.date || ''}</div>`;
+      lastMonth = month;
+    }
+    const tagBadges = (e.tags||[]).map(t => `<span class="entry-tag ${tagColors[t]||''}">${tagEmoji[t]||''} #${t}</span>`).join('');
+    html += `<div class="entry-card" onclick="openEntry(${e.id})">
+      <div class="entry-card-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.1rem">${e.icon||'📓'}</span>
+          <span class="entry-card-title">${e.title}</span>
+        </div>
+        <span class="entry-card-date">${e.date||''}</span>
+      </div>
+      <div class="entry-card-preview">${e.preview}</div>
+      <div class="entry-card-footer">
+        ${e.mood ? `<span class="entry-mood-badge">${e.mood}</span>` : ''}
+        ${tagBadges}
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+  document.getElementById('entryCount').textContent = all.length + ' entries saved';
+}
+
+function openEntry(id) {
+  const e = getAllEntries().find(en => en.id === id);
+  if (!e) return;
+  switchTab('write');
+  document.getElementById('titleInput').value    = e.title;
+  document.getElementById('editor').innerHTML    = e.content || `<p>${e.preview}</p>`;
+  document.getElementById('entryIconBtn').textContent = e.icon || '📓';
+  tags = [...(e.tags||[])]; renderTags();
+  updateWordCount();
+  showToast('Entry loaded ✦');
+}
+
+// ── Prompts ──
+const prompts = [
+  { emoji:'🌸', text:'What are 3 things that made you smile today, no matter how small?', tag:'grateful' },
+  { emoji:'💭', text:'If your future self could send you a message right now, what would she say?', tag:'reflection' },
+  { emoji:'🌙', text:'Describe a dream you\'ve been putting off. What is one tiny step toward it?', tag:'dreams' },
+  { emoji:'🔥', text:'What is one thing you did this week that you are genuinely proud of?', tag:'reflection' },
+  { emoji:'💜', text:'Write a love letter to yourself. Tell her what she deserves to hear.', tag:'grateful' },
+  { emoji:'🌿', text:'What do you need to let go of to feel lighter?', tag:'vent' },
+  { emoji:'✨', text:'Describe your perfect day from morning to night. Every detail.', tag:'dreams' },
+  { emoji:'🌺', text:'What is a belief about yourself that you are ready to rewrite?', tag:'reflection' },
+  { emoji:'☁️', text:'Write about a moment recently when you felt completely at peace.', tag:'grateful' },
+  { emoji:'🦋', text:'What version of yourself are you becoming? Describe her.', tag:'dreams' },
+];
+function renderPrompts() {
+  document.getElementById('promptCards').innerHTML = prompts.map(p => `
+    <div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem;margin-bottom:10px;cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow)"
+      onmouseover="this.style.borderColor='var(--pink)';this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.borderColor='rgba(242,167,195,0.25)';this.style.transform=''"
+      onclick="usePrompt('${p.text.replace(/'/g,"\\'")}','${p.tag}')">
+      <div style="font-size:1.5rem;margin-bottom:6px">${p.emoji}</div>
+      <div style="font-size:0.9rem;font-family:'Caveat',cursive;line-height:1.5;color:var(--text)">${p.text}</div>
+      <div style="margin-top:8px"><span class="entry-tag ${tagColors[p.tag]||''}">${tagEmoji[p.tag]||''} #${p.tag}</span></div>
+    </div>
+  `).join('');
+}
+function usePrompt(text, tag) {
+  switchTab('write');
+  const editor = document.getElementById('editor');
+  editor.innerHTML = `<p><em style="color:var(--text-xs)">${text}</em></p><p><br></p>`;
+  addTag(tag);
+  editor.focus();
+  // place cursor at end
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.collapse(false);
+  window.getSelection().removeAllRanges();
+  window.getSelection().addRange(range);
+  showToast('Prompt loaded! Start writing ✍️');
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg;
+  t.classList.add('show'); clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// init
+document.getElementById('entryCount').textContent = getAllEntries().length + ' entries saved';
+</script>
+</body>
+</html>

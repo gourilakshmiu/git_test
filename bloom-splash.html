@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bloom — Your Daily Companion</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --pink:    #F2A7C3;
+    --pink-l:  #FAD9E8;
+    --pink-d:  #C4527A;
+    --lavender:#C3B9F0;
+    --lav-l:   #EAE6FF;
+    --lav-d:   #7B6DC9;
+    --mint:    #A8DEC9;
+    --mint-l:  #D8F3EA;
+    --peach:   #F8C8A0;
+    --peach-l: #FDE8D4;
+    --cream:   #FFF8F4;
+    --text:    #5A3B4A;
+    --text-s:  #9A6B7E;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Floating background blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.45;
+    animation: drift 8s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 380px; height: 380px; background: var(--pink-l);   top: -80px;  left: -80px;  animation-delay: 0s; }
+  .blob-2 { width: 300px; height: 300px; background: var(--lav-l);    bottom: -60px; right: -60px; animation-delay: -3s; }
+  .blob-3 { width: 220px; height: 220px; background: var(--mint-l);   top: 40%;    left: 60%;    animation-delay: -1.5s; }
+  .blob-4 { width: 160px; height: 160px; background: var(--peach-l);  top: 20%;    left: 10%;    animation-delay: -5s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(30px, 20px) scale(1.08); }
+  }
+
+  /* Floating petals */
+  .petal {
+    position: fixed;
+    width: 10px; height: 14px;
+    border-radius: 50% 0 50% 0;
+    opacity: 0;
+    animation: fall linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes fall {
+    0%   { transform: translateY(-20px) rotate(0deg);   opacity: 0; }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* Main card */
+  .card {
+    position: relative;
+    z-index: 10;
+    width: min(420px, 92vw);
+    background: rgba(255,255,255,0.78);
+    backdrop-filter: blur(18px);
+    border-radius: 32px;
+    border: 1.5px solid rgba(242,167,195,0.4);
+    padding: 2.4rem 2rem 2rem;
+    text-align: center;
+    box-shadow: 0 8px 48px rgba(196,82,122,0.12), 0 2px 8px rgba(196,82,122,0.06);
+    animation: popIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85) translateY(24px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  /* Date chip */
+  .date-chip {
+    display: inline-block;
+    background: var(--pink-l);
+    color: var(--pink-d);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 1.4rem;
+    border: 1px solid rgba(242,167,195,0.5);
+  }
+
+  /* Mascot SVG area */
+  .mascot-wrap {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.2rem;
+  }
+  .mascot-wrap svg { overflow: visible; }
+
+  /* Halo ring behind mascot */
+  .halo {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(242,167,195,0.25) 0%, transparent 70%);
+    animation: pulse-halo 3s ease-in-out infinite;
+  }
+  @keyframes pulse-halo {
+    0%,100% { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
+    50%      { transform: translate(-50%,-50%) scale(1.15); opacity: 1;   }
+  }
+
+  /* Mascot bounce */
+  .mascot-svg {
+    animation: bounce 3.2s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(196,82,122,0.18));
+  }
+  @keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+
+  /* Quote */
+  .quote-block {
+    margin: 0 0 1.4rem;
+    padding: 1.1rem 1.2rem;
+    background: linear-gradient(135deg, rgba(250,217,232,0.5), rgba(234,230,255,0.5));
+    border-radius: 18px;
+    border: 1px solid rgba(195,185,240,0.35);
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    animation: fadeQuote 0.6s ease both;
+  }
+  @keyframes fadeQuote {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .quote-text {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--text);
+    line-height: 1.55;
+    margin-bottom: 0.45rem;
+  }
+  .quote-author {
+    font-size: 0.75rem;
+    color: var(--text-s);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .quote-deco {
+    position: absolute;
+    top: 6px; left: 10px;
+    font-size: 2.8rem;
+    color: rgba(242,167,195,0.25);
+    font-family: 'Playfair Display', serif;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  /* Quote dots */
+  .quote-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 1.4rem;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--lav-l);
+    border: 1.5px solid var(--lavender);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .dot.active { background: var(--pink); border-color: var(--pink-d); transform: scale(1.3); }
+
+  /* App name */
+  .app-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--pink-d);
+    letter-spacing: -0.02em;
+    margin-bottom: 0.15rem;
+  }
+  .app-tagline {
+    font-size: 0.8rem;
+    color: var(--text-s);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 1.6rem;
+  }
+
+  /* Enter button */
+  .enter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, var(--pink), var(--lavender));
+    color: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    padding: 0.75rem 2.2rem;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    box-shadow: 0 4px 18px rgba(196,82,122,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+  }
+  .enter-btn:hover  { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(196,82,122,0.38); }
+  .enter-btn:active { transform: translateY(0);    box-shadow: 0 2px 10px rgba(196,82,122,0.2);  }
+  .enter-btn .arrow { font-size: 1.1rem; }
+
+  /* Bottom stars */
+  .stars-row {
+    margin-top: 1.4rem;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .star { font-size: 0.9rem; animation: twinkle 2s ease-in-out infinite; }
+  .star:nth-child(2) { animation-delay: 0.4s; }
+  .star:nth-child(3) { animation-delay: 0.8s; }
+  @keyframes twinkle {
+    0%,100% { opacity: 0.4; transform: scale(1); }
+    50%      { opacity: 1;   transform: scale(1.3); }
+  }
+
+  /* Reward toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(255,255,255,0.92);
+    border: 1px solid var(--pink-l);
+    border-radius: 20px;
+    padding: 0.65rem 1.4rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(196,82,122,0.15);
+    z-index: 100;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+    opacity: 0;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Day counter */
+  .streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--peach-l);
+    color: #b5651d;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--peach);
+    margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- Background blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+<div class="blob blob-4"></div>
+
+<!-- Falling petals (created by JS) -->
+
+<!-- Main splash card -->
+<div class="card">
+  <div class="date-chip" id="dateChip">Monday, March 13</div>
+
+  <div class="streak">🔥 <span id="streakCount">3</span> day streak</div>
+
+  <!-- Cute mascot SVG -->
+  <div class="mascot-wrap">
+    <div class="halo"></div>
+    <svg class="mascot-svg" width="110" height="120" viewBox="0 0 110 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Petals -->
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#F4C0D1" opacity="0.9"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#F4C0D1" opacity="0.9" transform="rotate(45 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#F4C0D1" opacity="0.9" transform="rotate(90 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#F4C0D1" opacity="0.9" transform="rotate(135 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#ED93B1" opacity="0.7" transform="rotate(22.5 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#ED93B1" opacity="0.7" transform="rotate(67.5 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#ED93B1" opacity="0.7" transform="rotate(112.5 55 55)"/>
+      <ellipse cx="55" cy="26" rx="10" ry="16" fill="#ED93B1" opacity="0.7" transform="rotate(157.5 55 55)"/>
+      <!-- Head -->
+      <circle cx="55" cy="55" r="28" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1.5"/>
+      <!-- Cheeks -->
+      <ellipse cx="40" cy="62" rx="7" ry="5" fill="#F9B8C8" opacity="0.6"/>
+      <ellipse cx="70" cy="62" rx="7" ry="5" fill="#F9B8C8" opacity="0.6"/>
+      <!-- Eyes -->
+      <ellipse cx="46" cy="52" rx="4.5" ry="5.5" fill="#5A3B4A"/>
+      <ellipse cx="64" cy="52" rx="4.5" ry="5.5" fill="#5A3B4A"/>
+      <circle cx="48" cy="50" r="1.5" fill="white"/>
+      <circle cx="66" cy="50" r="1.5" fill="white"/>
+      <!-- Smile -->
+      <path d="M45,63 Q55,72 65,63" stroke="#C4527A" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Bow -->
+      <path d="M42,32 Q49,26 55,32 Q49,38 42,32z" fill="#C3B9F0"/>
+      <path d="M55,32 Q61,26 68,32 Q61,38 55,32z" fill="#C3B9F0"/>
+      <circle cx="55" cy="32" r="3.5" fill="#7B6DC9"/>
+      <!-- Body -->
+      <ellipse cx="55" cy="95" rx="20" ry="18" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1"/>
+      <!-- Dress -->
+      <path d="M36,88 Q55,80 74,88 L78,108 Q55,116 32,108z" fill="#F4C0D1"/>
+      <!-- Dress ruffle -->
+      <path d="M32,108 Q55,116 78,108" stroke="#ED93B1" stroke-width="2" fill="none"/>
+      <!-- Arms -->
+      <ellipse cx="30" cy="92" rx="8" ry="5" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1" transform="rotate(-30 30 92)"/>
+      <ellipse cx="80" cy="92" rx="8" ry="5" fill="#FDE8D4" stroke="#F8C8A0" stroke-width="1" transform="rotate(30 80 92)"/>
+      <!-- Star in hand -->
+      <text x="18" y="97" font-size="12" fill="#EF9F27">✦</text>
+    </svg>
+  </div>
+
+  <!-- App name -->
+  <div class="app-name">Bloom</div>
+  <div class="app-tagline">your daily companion ✦</div>
+
+  <!-- Motivational quote -->
+  <div class="quote-block" id="quoteBlock">
+    <div class="quote-deco">"</div>
+    <div class="quote-text" id="quoteText">Loading your daily sparkle...</div>
+    <div class="quote-author" id="quoteAuthor">— ✦</div>
+  </div>
+
+  <!-- Dots nav -->
+  <div class="quote-dots" id="quoteDots"></div>
+
+  <!-- Enter button -->
+  <a href="#" class="enter-btn" onclick="enterApp(event)">
+    Let's bloom today
+    <span class="arrow">✦</span>
+  </a>
+
+  <div class="stars-row">
+    <span class="star">🌸</span>
+    <span class="star">✦</span>
+    <span class="star">🌸</span>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">🌸 Welcome back! You're on a 3-day streak!</div>
+
+<script>
+const quotes = [
+  { text: "She believed she could, so she did.", author: "— R.S. Grey" },
+  { text: "You are allowed to be both a masterpiece and a work in progress.", author: "— Sophia Bush" },
+  { text: "Be your own reason to smile.", author: "— Unknown" },
+  { text: "Darling, you are a wildflower in a world of dandelions.", author: "— Unknown" },
+  { text: "You didn't come this far to only come this far.", author: "— Unknown" },
+  { text: "Bloom where you are planted.", author: "— Saint Francis de Sales" },
+  { text: "The most courageous act is still to think for yourself. Aloud.", author: "— Coco Chanel" },
+  { text: "She is clothed in strength and dignity, and she laughs without fear of the future.", author: "— Proverbs 31:25" },
+  { text: "You are enough — a thousand times enough.", author: "— Atticus" },
+  { text: "A flower does not think of competing with the flower next to it. It just blooms.", author: "— Zen Shin" },
+  { text: "Be the energy you want to attract.", author: "— Unknown" },
+  { text: "Little by little, one travels far.", author: "— J.R.R. Tolkien" },
+  { text: "Today is a good day to have a great day.", author: "— Unknown" },
+  { text: "You are magic. Don't ever apologize for the fire in you.", author: "— Nikita Gill" },
+];
+
+// Pick today's quote based on day of year (same quote all day)
+const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+let currentQuote = dayOfYear % quotes.length;
+
+function setDate() {
+  const now = new Date();
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('dateChip').textContent =
+    `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+}
+
+function renderQuote(idx) {
+  const q = quotes[idx];
+  const block = document.getElementById('quoteBlock');
+  block.style.animation = 'none';
+  block.offsetHeight;
+  block.style.animation = 'fadeQuote 0.5s ease both';
+  document.getElementById('quoteText').textContent   = q.text;
+  document.getElementById('quoteAuthor').textContent = q.author;
+  renderDots(idx);
+}
+
+function renderDots(active) {
+  const container = document.getElementById('quoteDots');
+  const total = Math.min(7, quotes.length);
+  container.innerHTML = '';
+  const start = Math.max(0, Math.min(active - 3, quotes.length - total));
+  for (let i = start; i < start + total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === active ? ' active' : '');
+    d.onclick = () => { currentQuote = i; renderQuote(i); };
+    container.appendChild(d);
+  }
+}
+
+function createPetals() {
+  const colours = ['#F4C0D1','#CECBF6','#9FE1CB','#FAC775','#ED93B1'];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    p.style.left            = Math.random() * 100 + 'vw';
+    p.style.top             = '-20px';
+    p.style.background      = colours[Math.floor(Math.random() * colours.length)];
+    p.style.animationDuration = (6 + Math.random() * 8) + 's';
+    p.style.animationDelay  = (Math.random() * 10) + 's';
+    p.style.transform       = `rotate(${Math.random()*360}deg)`;
+    document.body.appendChild(p);
+  }
+}
+
+function showToast() {
+  const toast = document.getElementById('toast');
+  setTimeout(() => {
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3500);
+  }, 900);
+}
+
+function enterApp(e) {
+  e.preventDefault();
+  const card = document.querySelector('.card');
+  card.style.transition = 'transform 0.4s ease, opacity 0.4s ease';
+  card.style.transform  = 'scale(1.04)';
+  card.style.opacity    = '0';
+  setTimeout(() => {
+    alert('🌸 Opening Bloom... (connect your next page here!)');
+    card.style.transform = 'scale(1)';
+    card.style.opacity   = '1';
+  }, 400);
+}
+
+// Init
+setDate();
+renderQuote(currentQuote);
+createPetals();
+showToast();
+</script>
+</body>
+</html>
